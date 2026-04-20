@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Bilangan Cacah - SMA Kelas 10</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f0f4f8;
+            color: #1a202c;
+            overflow-x: hidden;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .drop-zone {
+            min-height: 120px;
+            border: 3px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.dragover {
+            background: #edf2f7;
+            border-color: #4a5568;
+            transform: scale(1.02);
+        }
+
+        .draggable {
+            cursor: grab;
+            transition: transform 0.2s;
+        }
+
+        .draggable:active {
+            cursor: grabbing;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+        }
+
+        .certificate-container {
+            width: 800px;
+            height: 600px;
+            background: white;
+            border: 20px solid #4f46e5;
+            padding: 40px;
+            position: relative;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .certificate-border-inner {
+            border: 5px solid #764ba2;
+            width: 100%;
+            height: 100%;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hidden-screen {
+            display: none;
+        }
+
+        .match-item {
+            cursor: pointer;
+            border: 2px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .match-item.selected {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+        }
+
+        .match-item.correct {
+            background-color: #d1fae5;
+            border-color: #10b981;
+            cursor: default;
+        }
+
+        /* Sound Control Floating Button */
+        #sound-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: white;
+            padding: 10px;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        #sound-toggle:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Audio Element -->
+    <audio id="bg-music" loop>
+        <source src="https://github.com/ajijaka/musikMTK/raw/refs/heads/main/The_Gold_Star_Reward.mp3" type="audio/mpeg">
+        Browser Anda tidak mendukung elemen audio.
+    </audio>
+
+    <!-- Sound Control Button -->
+    <button id="sound-toggle" onclick="toggleSound()" title="Aktifkan/Matikan Suara">
+        <span id="sound-icon" class="text-2xl">🔇</span>
+    </button>
+
+    <!-- Screen 1: Start -->
+    <div id="screen-start" class="max-w-md w-full card p-8 text-center animate-fade-in">
+        <div class="mb-6">
+            <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-4xl">🔢</span>
+            </div>
+            <h1 class="text-3xl font-extrabold text-gray-800">Bilangan Cacah</h1>
+            <p class="text-gray-500 mt-2">Tantangan Matematika Kelas 10</p>
+        </div>
+        <div class="space-y-4">
+            <input type="text" id="player-name" placeholder="Masukkan Nama Kamu" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+            <button onclick="startGame()" class="w-full btn-primary py-3 rounded-xl font-bold text-lg">Mulai Petualangan</button>
+            <p class="text-xs text-gray-400 mt-2 italic">*Musik akan mulai diputar saat gim dimulai</p>
+        </div>
+    </div>
+
+    <!-- Screen 2: Level 1 (Drag and Drop) -->
+    <div id="screen-level1" class="max-w-3xl w-full hidden-screen card p-8">
+        <div class="flex justify-between items-center mb-6">
+            <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full font-bold text-sm">LEVEL 1</span>
+            <div class="text-gray-600 font-bold">Skor: <span id="score-l1">0</span>/5</div>
+        </div>
+        <h2 class="text-xl font-bold mb-4">Urutkan Sifat Bilangan: Tarik kotak angka ke kategori yang benar!</h2>
+        
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div id="box-ganjil" class="drop-zone p-4 rounded-xl flex flex-wrap gap-2 items-center justify-center" ondrop="drop(event)" ondragover="allowDrop(event)" data-type="ganjil">
+                <span class="w-full text-center text-sm font-bold text-gray-400">BILANGAN GANJIL</span>
+            </div>
+            <div id="box-genap" class="drop-zone p-4 rounded-xl flex flex-wrap gap-2 items-center justify-center" ondrop="drop(event)" ondragover="allowDrop(event)" data-type="genap">
+                <span class="w-full text-center text-sm font-bold text-gray-400">BILANGAN GENAP</span>
+            </div>
+        </div>
+
+        <div id="drag-items" class="flex flex-wrap justify-center gap-3 mb-8">
+            <div id="num-1" draggable="true" ondragstart="drag(event)" data-type="ganjil" class="draggable px-6 py-3 bg-white border-2 border-indigo-500 rounded-lg shadow-sm font-bold text-indigo-600">23</div>
+            <div id="num-2" draggable="true" ondragstart="drag(event)" data-type="genap" class="draggable px-6 py-3 bg-white border-2 border-indigo-500 rounded-lg shadow-sm font-bold text-indigo-600">48</div>
+            <div id="num-3" draggable="true" ondragstart="drag(event)" data-type="ganjil" class="draggable px-6 py-3 bg-white border-2 border-indigo-500 rounded-lg shadow-sm font-bold text-indigo-600">105</div>
+            <div id="num-4" draggable="true" ondragstart="drag(event)" data-type="genap" class="draggable px-6 py-3 bg-white border-2 border-indigo-500 rounded-lg shadow-sm font-bold text-indigo-600">2024</div>
+            <div id="num-5" draggable="true" ondragstart="drag(event)" data-type="ganjil" class="draggable px-6 py-3 bg-white border-2 border-indigo-500 rounded-lg shadow-sm font-bold text-indigo-600">7</div>
+        </div>
+        
+        <button id="btn-next-l1" onclick="toLevel2()" class="w-full py-3 bg-gray-300 text-gray-500 rounded-xl font-bold cursor-not-allowed" disabled>Lanjut ke Level 2</button>
+    </div>
+
+    <!-- Screen 3: Level 2 (Multiple Choice) -->
+    <div id="screen-level2" class="max-w-2xl w-full hidden-screen card p-8">
+        <div class="flex justify-between items-center mb-6">
+            <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full font-bold text-sm">LEVEL 2</span>
+            <div class="text-gray-600 font-bold">Progress: <span id="mcq-count">1</span>/3</div>
+        </div>
+        
+        <div id="mcq-container">
+            <h2 id="mcq-question" class="text-xl font-bold mb-6 italic text-gray-800">Memuat soal...</h2>
+            <div id="mcq-options" class="grid grid-cols-1 gap-3">
+                <!-- Options injected by JS -->
+            </div>
+        </div>
+
+        <div id="mcq-feedback" class="mt-6 hidden p-4 rounded-lg text-center font-bold"></div>
+    </div>
+
+    <!-- Screen 4: Level 3 (Match Word) -->
+    <div id="screen-level3" class="max-w-4xl w-full hidden-screen card p-8">
+        <div class="flex justify-between items-center mb-6">
+            <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full font-bold text-sm">LEVEL 3</span>
+            <div class="text-gray-600 font-bold">Cocokkan: <span id="match-count">0</span>/4</div>
+        </div>
+        <h2 class="text-xl font-bold mb-6 text-center">Pasangkan Sifat Operasi Bilangan Cacah</h2>
+        
+        <div class="grid grid-cols-2 gap-8">
+            <div class="space-y-3" id="match-left">
+                <!-- Terms -->
+            </div>
+            <div class="space-y-3" id="match-right">
+                <!-- Definitions -->
+            </div>
+        </div>
+
+        <button id="btn-finish" onclick="showCertificate()" class="w-full mt-8 py-3 bg-gray-300 text-gray-500 rounded-xl font-bold cursor-not-allowed hidden" disabled>Selesaikan & Ambil Sertifikat</button>
+    </div>
+
+    <!-- Screen 5: Certificate -->
+    <div id="screen-final" class="hidden-screen flex-col items-center">
+        <div id="certificate" class="certificate-container flex shadow-2xl">
+            <div class="certificate-border-inner">
+                <h3 class="text-indigo-600 font-bold tracking-widest text-xl mb-4">SERTIFIKAT PENGHARGAAN</h3>
+                <p class="text-gray-500 text-lg italic">Diberikan kepada:</p>
+                <h1 id="cert-name" class="text-5xl font-black my-6 text-gray-800 underline decoration-indigo-500 underline-offset-8">NAMA PESERTA</h1>
+                <p class="text-gray-600 text-center max-w-lg mb-8 leading-relaxed">
+                    Atas keberhasilannya menyelesaikan seluruh tantangan dalam gim edukasi <br>
+                    <strong>"Eksplorasi Bilangan Cacah Tingkat Menengah"</strong><br>
+                    dengan hasil yang sangat memuaskan.
+                </p>
+                <div class="flex justify-between w-full mt-auto">
+                    <div class="text-center border-t border-gray-300 pt-2 px-8">
+                        <p class="text-xs text-gray-400">Guru Matematika</p>
+                        <p class="font-bold text-gray-700">Gemini AI</p>
+                    </div>
+                    <div class="w-24 h-24 flex items-center justify-center bg-indigo-600 rounded-full text-white font-bold transform rotate-12 border-4 border-white shadow-lg">
+                        LULUS
+                    </div>
+                    <div class="text-center border-t border-gray-300 pt-2 px-8">
+                        <p class="text-xs text-gray-400">Tanggal</p>
+                        <p id="cert-date" class="font-bold text-gray-700">20/05/2024</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-8 flex gap-4">
+            <button onclick="window.print()" class="px-8 py-3 btn-primary rounded-full font-bold">Cetak Sertifikat</button>
+            <button onclick="location.reload()" class="px-8 py-3 bg-white text-indigo-600 border-2 border-indigo-600 rounded-full font-bold">Main Lagi</button>
+        </div>
+        <p class="text-sm text-gray-400 mt-4 italic">*Gunakan landscape saat mencetak</p>
+    </div>
+
+    <script>
+        let userName = "";
+        let scoreL1 = 0;
+        let currentMCQ = 0;
+        let matchSelected = null;
+        let matchCorrectCount = 0;
+        let isMuted = true;
+
+        const bgMusic = document.getElementById('bg-music');
+        const soundIcon = document.getElementById('sound-icon');
+
+        // --- SOUND LOGIC ---
+        function toggleSound() {
+            if (bgMusic.paused) {
+                bgMusic.play().catch(e => console.log("Menunggu interaksi pengguna untuk memutar musik"));
+                isMuted = false;
+                soundIcon.innerText = "🔊";
+            } else {
+                bgMusic.pause();
+                isMuted = true;
+                soundIcon.innerText = "🔇";
+            }
+        }
+
+        // --- GAME FLOW ---
+        function startGame() {
+            const input = document.getElementById('player-name');
+            if (input.value.trim() === "") {
+                input.classList.add('border-red-500');
+                return;
+            }
+            userName = input.value;
+            document.getElementById('screen-start').classList.add('hidden-screen');
+            document.getElementById('screen-level1').classList.remove('hidden-screen');
+
+            // Mulai musik saat gim dimulai (browser mengizinkan putar otomatis setelah interaksi klik)
+            bgMusic.play().then(() => {
+                isMuted = false;
+                soundIcon.innerText = "🔊";
+            }).catch(e => console.log("Musik tertahan oleh kebijakan browser"));
+        }
+
+        // --- LEVEL 1: DRAG AND DROP ---
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('dragover');
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('dragover');
+            const data = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+            const dropZoneType = ev.currentTarget.getAttribute('data-type');
+            const itemType = draggedElement.getAttribute('data-type');
+
+            if (dropZoneType === itemType) {
+                ev.currentTarget.appendChild(draggedElement);
+                draggedElement.setAttribute('draggable', 'false');
+                draggedElement.classList.remove('bg-white', 'border-indigo-500');
+                draggedElement.classList.add('bg-green-100', 'border-green-500', 'text-green-700', 'cursor-default');
+                scoreL1++;
+                document.getElementById('score-l1').innerText = scoreL1;
+                
+                if (scoreL1 === 5) {
+                    const btn = document.getElementById('btn-next-l1');
+                    btn.disabled = false;
+                    btn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                    btn.classList.add('btn-primary');
+                }
+            } else {
+                draggedElement.classList.add('animate-shake');
+                setTimeout(() => draggedElement.classList.remove('animate-shake'), 500);
+            }
+        }
+
+        // --- LEVEL 2: MULTIPLE CHOICE ---
+        const questions = [
+            {
+                q: "Jika n adalah bilangan cacah, manakah dari pernyataan berikut yang selalu benar?",
+                o: ["n - 1 selalu bilangan cacah", "n + 0 = n (Identitas Penjumlahan)", "n ÷ 1 = 0", "n x 0 = n"],
+                a: 1
+            },
+            {
+                q: "Himpunan bilangan cacah dimulai dari angka...",
+                o: ["1, 2, 3, ...", "-1, 0, 1, ...", "0, 1, 2, 3, ...", "..., -2, -1, 0"],
+                a: 2
+            },
+            {
+                q: "Dalam operasi bilangan cacah, (a + b) + c = a + (b + c) disebut sifat...",
+                o: ["Komutatif", "Distributif", "Asosiatif", "Tertutup"],
+                a: 2
+            }
+        ];
+
+        function toLevel2() {
+            document.getElementById('screen-level1').classList.add('hidden-screen');
+            document.getElementById('screen-level2').classList.remove('hidden-screen');
+            loadMCQ();
+        }
+
+        function loadMCQ() {
+            const qData = questions[currentMCQ];
+            document.getElementById('mcq-count').innerText = currentMCQ + 1;
+            document.getElementById('mcq-question').innerText = qData.q;
+            const optionsDiv = document.getElementById('mcq-options');
+            optionsDiv.innerHTML = "";
+
+            qData.o.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-500 transition-all font-semibold bg-white";
+                btn.innerText = opt;
+                btn.onclick = () => checkMCQ(index);
+                optionsDiv.appendChild(btn);
+            });
+        }
+
+        function checkMCQ(idx) {
+            const feedback = document.getElementById('mcq-feedback');
+            const btns = document.querySelectorAll('#mcq-options button');
+            
+            btns.forEach(b => b.disabled = true);
+
+            if (idx === questions[currentMCQ].a) {
+                btns[idx].classList.add('border-green-500', 'bg-green-50');
+                feedback.innerText = "Tepat Sekali! ✨";
+                feedback.className = "mt-6 p-4 rounded-lg text-center font-bold bg-green-100 text-green-700 block";
+            } else {
+                btns[idx].classList.add('border-red-500', 'bg-red-50');
+                btns[questions[currentMCQ].a].classList.add('border-green-500');
+                feedback.innerText = "Kurang Tepat. Pelajari lagi sifatnya ya!";
+                feedback.className = "mt-6 p-4 rounded-lg text-center font-bold bg-red-100 text-red-700 block";
+            }
+
+            setTimeout(() => {
+                currentMCQ++;
+                feedback.classList.add('hidden');
+                if (currentMCQ < questions.length) {
+                    loadMCQ();
+                } else {
+                    toLevel3();
+                }
+            }, 1500);
+        }
+
+        // --- LEVEL 3: MATCH WORD ---
+        const matchData = [
+            { term: "Komutatif", def: "a + b = b + a", id: 1 },
+            { term: "Distributif", def: "a(b + c) = ab + ac", id: 2 },
+            { term: "Identitas Kali", def: "a × 1 = a", id: 3 },
+            { term: "Sifat Tertutup", def: "Hasil jumlah cacah adalah cacah", id: 4 }
+        ];
+
+        function toLevel3() {
+            document.getElementById('screen-level2').classList.add('hidden-screen');
+            document.getElementById('screen-level3').classList.remove('hidden-screen');
+            initMatch();
+        }
+
+        function initMatch() {
+            const left = document.getElementById('match-left');
+            const right = document.getElementById('match-right');
+            
+            // Shuffle arrays for challenge
+            const terms = [...matchData].sort(() => Math.random() - 0.5);
+            const defs = [...matchData].sort(() => Math.random() - 0.5);
+
+            terms.forEach(item => {
+                const d = document.createElement('div');
+                d.className = "match-item p-4 rounded-xl font-bold text-center shadow-sm bg-white";
+                d.innerText = item.term;
+                d.dataset.id = item.id;
+                d.onclick = () => handleMatchClick(d, 'term');
+                left.appendChild(d);
+            });
+
+            defs.forEach(item => {
+                const d = document.createElement('div');
+                d.className = "match-item p-4 rounded-xl text-sm font-medium text-center shadow-sm bg-white";
+                d.innerText = item.def;
+                d.dataset.id = item.id;
+                d.onclick = () => handleMatchClick(d, 'def');
+                right.appendChild(d);
+            });
+        }
+
+        function handleMatchClick(el, type) {
+            if (el.classList.contains('correct')) return;
+
+            // Deselect previous of same type
+            const siblings = el.parentElement.querySelectorAll('.match-item');
+            siblings.forEach(s => s.classList.remove('selected'));
+            
+            el.classList.add('selected');
+
+            if (!matchSelected) {
+                matchSelected = { el, type };
+            } else {
+                if (matchSelected.type !== type) {
+                    // Check Match
+                    if (matchSelected.el.dataset.id === el.dataset.id) {
+                        matchSelected.el.classList.add('correct');
+                        el.classList.add('correct');
+                        matchCorrectCount++;
+                        document.getElementById('match-count').innerText = matchCorrectCount;
+                        
+                        if (matchCorrectCount === 4) {
+                            const btn = document.getElementById('btn-finish');
+                            btn.classList.remove('hidden', 'bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+                            btn.classList.add('btn-primary', 'block');
+                            btn.disabled = false;
+                        }
+                    }
+                    // Reset selection
+                    setTimeout(() => {
+                        matchSelected.el.classList.remove('selected');
+                        el.classList.remove('selected');
+                        matchSelected = null;
+                    }, 300);
+                } else {
+                    // Change selection of same type
+                    matchSelected = { el, type };
+                }
+            }
+        }
+
+        // --- FINAL: CERTIFICATE ---
+        function showCertificate() {
+            document.getElementById('screen-level3').classList.add('hidden-screen');
+            document.getElementById('screen-final').classList.remove('hidden-screen');
+            document.getElementById('screen-final').classList.add('flex');
+            
+            document.getElementById('cert-name').innerText = userName.toUpperCase();
+            const now = new Date();
+            document.getElementById('cert-date').innerText = now.toLocaleDateString('id-ID', {
+                day: 'numeric', month: 'long', year: 'numeric'
+            });
+            document.getElementById('certificate').style.display = 'flex';
+        }
+    </script>
+
+    <style>
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.2s ease-in-out infinite;
+            border-color: #ef4444 !important;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #certificate, #certificate * { visibility: visible; }
+            #sound-toggle { display: none !important; }
+            #certificate { 
+                position: fixed; 
+                left: 0; 
+                top: 0; 
+                width: 100%; 
+                height: 100%; 
+                margin: 0;
+                display: flex !important;
+                box-shadow: none;
+                border: 15px solid #4f46e5;
+            }
+        }
+    </style>
+</body>
+</html>
